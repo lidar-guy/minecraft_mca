@@ -51,19 +51,22 @@ NECK_INSET       = 2.2;   // how far the neck is set back from the cap front
 /* [Neck and Body] */
 // The neck is the narrowest part, directly below the cap.
 // Below it, a convex shoulder broadens out into the body.
-NECK_HEIGHT      = 3.5;   // straight neck length
-SHOULDER_H       = 1.5;   // height of the convex shoulder curve
-BODY_INSET       = 0.6;   // body sits slightly back from the cap front
-BODY_HEIGHT      = 6.5;   // straight body length
+// Body length is auto-computed to fill HEIGHT minus the cap and
+// pendant zones, so the body always meets the pendant arc cleanly.
+NECK_HEIGHT      = 3.0;   // straight neck length
+SHOULDER_H       = 1.2;   // height of the convex shoulder curve
+BODY_INSET       = 0.5;   // body sits slightly back from the cap front
 
 /* [Pendant Drop] */
-// Bottom pendant: large rounded lobe.  The circle is positioned so
-// it overlaps the back wall slightly (so the pendant integrates
-// flush with the back, like in the workshop photo) and its bottom
-// sits at y=0.
-PENDANT_DIAM         = 4.0;
-PENDANT_BACK_OVERLAP = 0.15; // how far past the back wall the circle extends
-UNDERCUT_H           = 1.2;  // concave undercut from body down into pendant
+// Bottom pendant: a rounded lobe that tapers down to a pointed
+// finial tip (NOT a plain half-circle).  The lobe is a circle and
+// the tip is a separate tapered polygon unioned below it.  The
+// whole pendant is clipped to x>=0 so it sits flush with the back.
+PENDANT_DIAM         = 3.4;  // main lobe diameter
+PENDANT_BACK_OVERLAP = 0.15; // how far past the back wall the lobe extends
+PENDANT_TIP_DROP     = 2.4;  // how far below the lobe bottom the tip extends
+PENDANT_TIP_X_FRAC   = 0.32; // tip X as fraction of DEPTH (~under lobe, slightly fwd)
+UNDERCUT_H           = 1.0;  // concave undercut from body down into pendant lobe
 
 /* [Cap Block (top decorative)] */
 CAP_BLOCK_W      = 5.5;   // length along the stack axis
@@ -115,30 +118,54 @@ module corbel_profile() {
     H = HEIGHT;
     D = DEPTH;
 
-    // Vertical landmarks (Y, from the bottom)
-    y_top         = H;
-    y_cap_bot     = y_top - CAP_HEIGHT;
-    y_neck_top    = y_cap_bot - CAP_UNDERCUT_H;
-    y_neck_bot    = y_neck_top - NECK_HEIGHT;
-    y_body_top    = y_neck_bot - SHOULDER_H;
-    y_body_bot    = y_body_top - BODY_HEIGHT;
-    y_pendant_top = y_body_bot - UNDERCUT_H;
+    // Vertical landmarks - cap section walks DOWN from y=HEIGHT;
+    // pendant section walks UP from y=0; body height is whatever's
+    // left in between so the body undercut always meets the lobe arc.
+    y_top      = H;
+    y_cap_bot  = y_top - CAP_HEIGHT;
+    y_neck_top = y_cap_bot - CAP_UNDERCUT_H;
+    y_neck_bot = y_neck_top - NECK_HEIGHT;
+    y_body_top = y_neck_bot - SHOULDER_H;
+
+    // Pendant lobe.  Place its center so the leftmost arc crosses
+    // the back wall (x=0) and its bottom sits PENDANT_TIP_DROP above
+    // y=0, leaving room for the tapered tip below.
+    pen_r = PENDANT_DIAM / 2;
+    pen_c = [pen_r - PENDANT_BACK_OVERLAP, pen_r + PENDANT_TIP_DROP];
+
+    // Where the body undercut meets the lobe (upper-front of circle)
+    pen_meet_top  = [pen_c[0] + pen_r * 0.55, pen_c[1] + pen_r * 0.85];
+
+    // Body bottom snaps to UNDERCUT_H above the lobe meet point.
+    y_body_bot    = pen_meet_top[1] + UNDERCUT_H;
+    y_pendant_top = pen_meet_top[1];
 
     // Horizontal landmarks (X, from the back wall)
     x_cap_front  = D;
     x_neck_front = D - NECK_INSET;
     x_body_front = D - BODY_INSET;
 
-    // Pendant lobe.  Place its center so the circle's leftmost arc
-    // crosses the back wall (x=0) and its bottom touches y=0.
-    pen_r = PENDANT_DIAM / 2;
-    pen_c = [pen_r - PENDANT_BACK_OVERLAP, pen_r];
+    // Pendant tip: a single point below the lobe, offset forward.
+    pen_tip = [D * PENDANT_TIP_X_FRAC, 0];
 
-    // Where the silhouette meets the pendant circle.
-    //   pen_meet_top  - upper-front arc (where body undercut lands)
-    //   pen_meet_back - on the back wall, just above where the circle
-    //                   intersects it (so the back wall closes cleanly)
-    pen_meet_top  = [pen_c[0] + pen_r * 0.55, pen_c[1] + pen_r * 0.85];
+    // Connection points where the tip polygon meets the lobe (well
+    // inside the circle on both sides, so the union is seamless).
+    tip_attach_front = [pen_c[0] + pen_r * 0.60, pen_c[1] - pen_r * 0.45];
+    tip_attach_back  = [pen_c[0] - pen_r * 0.60, pen_c[1] - pen_r * 0.55];
+
+    // Bezier handles for the tapered sides of the tip.
+    // Front side: convex sweep from upper-front of lobe down to tip.
+    th_front_a = [tip_attach_front[0] + pen_r * 0.20,
+                  tip_attach_front[1] - pen_r * 0.60];
+    th_front_b = [pen_tip[0] + pen_r * 0.20, pen_tip[1] + pen_r * 0.30];
+    // Back side: gentle concave from tip up to lobe back attach,
+    // staying close to the back wall so it doesn't bow outward.
+    th_back_a  = [pen_tip[0] - pen_r * 0.15, pen_tip[1] + pen_r * 0.25];
+    th_back_b  = [tip_attach_back[0] + pen_r * 0.15,
+                  tip_attach_back[1] - pen_r * 0.10];
+
+    // Where the back wall closes (just above where the lobe arc
+    // intersects x=0, so the back wall meets the lobe seamlessly).
     back_dy       = sqrt(max(0, pen_r * pen_r - pen_c[0] * pen_c[0]));
     pen_meet_back = [0, pen_c[1] + back_dy + 0.15];
 
@@ -195,8 +222,21 @@ module corbel_profile() {
              pen_meet_back]
         ));
 
-        // Pendant lobe, unioned with polygon for a seamless join
+        // Pendant lobe (main rounded body)
         translate(pen_c) circle(r = pen_r);
+
+        // Pendant tip: tapered polygon extending from the lobe down
+        // to a single point.  Sides are bezier-sampled so the taper
+        // is curved (concave on the back, convex on the front).
+        polygon(points = concat(
+            [tip_attach_front],
+            bez_seg(tip_attach_front, th_front_a, th_front_b,
+                    pen_tip, CURVE_STEPS),
+            [pen_tip],
+            bez_seg(pen_tip, th_back_a, th_back_b,
+                    tip_attach_back, CURVE_STEPS),
+            [tip_attach_back]
+        ));
     }
     // Back-wall clipping rectangle
     translate([0, -1]) square([D + 5, H + 5]);
