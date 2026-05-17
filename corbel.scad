@@ -38,31 +38,43 @@ T_SPACER      = 0.25;  // spacer thickness, inches
 SPACER_INSET  = 0.125; // shadow-line inset of spacer vs main, inches
 
 /* [Overall Profile - inches] */
-HEIGHT        = 16.0;  // top to bottom
-DEPTH         = 8.0;   // projection from wall (front-to-back)
+HEIGHT        = 20.0;  // top to bottom
+DEPTH         = 6.0;   // projection from wall (front-to-back)
 
 /* [Top Cap Shelf] */
-CAP_HEIGHT    = 1.4;   // height of the upper "shelf" / abacus
-CAP_STEP_X    = 1.0;   // how far the front steps back below the cap
-CAP_STEP_Y    = 0.5;   // height of that step
+// Cap is the full DEPTH wide at top, then sweeps inward via a concave
+// undercut into the narrower neck below it.
+CAP_HEIGHT       = 2.0;   // vertical height of the flat cap shelf
+CAP_UNDERCUT_H   = 1.0;   // height of the concave sweep below the cap
+NECK_INSET       = 2.2;   // how far the neck is set back from the cap front
 
-/* [Belly / Waist - profile control points, fractions of HEIGHT/DEPTH] */
-BELLY_X_FRAC  = 0.62;
-BELLY_Y_FRAC  = 0.55;
-WAIST_X_FRAC  = 0.26;
-WAIST_Y_FRAC  = 0.22;
+/* [Neck and Body] */
+// The neck is the narrowest part, directly below the cap.
+// Below it, a convex shoulder broadens out into the body.
+NECK_HEIGHT      = 3.5;   // straight neck length
+SHOULDER_H       = 1.5;   // height of the convex shoulder curve
+BODY_INSET       = 0.6;   // body sits slightly back from the cap front
+BODY_HEIGHT      = 6.5;   // straight body length
 
-/* [Bottom Teardrop] */
-TEARDROP_DIAM   = 3.0;
-TEARDROP_X_FRAC = 0.40;
-TEARDROP_Y_FRAC = 0.12;
+/* [Pendant Drop] */
+// Bottom pendant: large rounded lobe.  The circle is positioned so
+// it overlaps the back wall slightly (so the pendant integrates
+// flush with the back, like in the workshop photo) and its bottom
+// sits at y=0.
+PENDANT_DIAM         = 4.0;
+PENDANT_BACK_OVERLAP = 0.15; // how far past the back wall the circle extends
+UNDERCUT_H           = 1.2;  // concave undercut from body down into pendant
 
 /* [Cap Block (top decorative)] */
-CAP_BLOCK_W     = 6.0;   // length along the stack axis
-CAP_BLOCK_D     = 3.5;   // depth (front-to-back)
-CAP_BLOCK_H     = 3.2;   // height
-ROSETTE_DIAM    = 1.8;
-ROSETTE_DEPTH   = 0.20;
+CAP_BLOCK_W      = 5.5;   // length along the stack axis
+CAP_BLOCK_D      = 3.2;   // depth (front-to-back)
+CAP_BLOCK_H      = 2.5;   // height
+CAP_BLOCK_CHAMFER = 0.5;  // bottom-front corner chamfer
+ROSETTE_DIAM     = 2.0;
+ROSETTE_DEPTH    = 0.18;
+ROSETTE_DOT_FRAC = 0.22;  // dot diameter / rosette diameter
+ROSETTE_ARM_W    = 0.08;  // arm groove width / rosette diameter
+ROSETTE_ARM_REACH = 0.36; // dot center distance / rosette diameter
 
 /* [Rendering] */
 $fn          = 80;
@@ -87,70 +99,108 @@ function bez_seg(p0,p1,p2,p3,n) =
 
 //---------------------------------------------------------
 // 2D Profile (defined in inches)
+//
+// Built by walking the silhouette from top-back, across the
+// top, down the front through four zones, and back to the
+// bottom-back corner.  Zones (top -> bottom):
+//   1. Cap shelf  (full width at x=DEPTH)
+//   2. Concave undercut  (sweeps front-in toward neck)
+//   3. Neck        (narrowest, vertical at x=DEPTH-NECK_INSET)
+//   4. Convex shoulder  (broadens back out to body)
+//   5. Body        (vertical at x=DEPTH-BODY_INSET)
+//   6. Concave undercut  (curves in toward pendant)
+//   7. Pendant lobe  (unioned circle)
 //---------------------------------------------------------
 module corbel_profile() {
     H = HEIGHT;
     D = DEPTH;
 
-    // Key vertices (inches)
-    p_top_back     = [0, H];
-    p_top_front    = [D, H];
-    p_cap_front_b  = [D, H - CAP_HEIGHT];
-    p_cap_step_top = [D - CAP_STEP_X, H - CAP_HEIGHT];
-    p_cap_step_bot = [D - CAP_STEP_X, H - CAP_HEIGHT - CAP_STEP_Y];
+    // Vertical landmarks (Y, from the bottom)
+    y_top         = H;
+    y_cap_bot     = y_top - CAP_HEIGHT;
+    y_neck_top    = y_cap_bot - CAP_UNDERCUT_H;
+    y_neck_bot    = y_neck_top - NECK_HEIGHT;
+    y_body_top    = y_neck_bot - SHOULDER_H;
+    y_body_bot    = y_body_top - BODY_HEIGHT;
+    y_pendant_top = y_body_bot - UNDERCUT_H;
 
-    belly = [D * BELLY_X_FRAC, H * BELLY_Y_FRAC];
-    waist = [D * WAIST_X_FRAC, H * WAIST_Y_FRAC];
+    // Horizontal landmarks (X, from the back wall)
+    x_cap_front  = D;
+    x_neck_front = D - NECK_INSET;
+    x_body_front = D - BODY_INSET;
 
-    td_c = [D * TEARDROP_X_FRAC, H * TEARDROP_Y_FRAC];
-    td_r = TEARDROP_DIAM / 2;
+    // Pendant lobe.  Place its center so the circle's leftmost arc
+    // crosses the back wall (x=0) and its bottom touches y=0.
+    pen_r = PENDANT_DIAM / 2;
+    pen_c = [pen_r - PENDANT_BACK_OVERLAP, pen_r];
 
-    // Smooth point where the profile meets the teardrop circle.
-    // Sits on the upper-left side of the circle so the polygon
-    // and the circle overlap cleanly when unioned.
-    td_meet = [td_c[0] - td_r * 0.55, td_c[1] + td_r * 0.70];
+    // Where the silhouette meets the pendant circle.
+    //   pen_meet_top  - upper-front arc (where body undercut lands)
+    //   pen_meet_back - on the back wall, just above where the circle
+    //                   intersects it (so the back wall closes cleanly)
+    pen_meet_top  = [pen_c[0] + pen_r * 0.55, pen_c[1] + pen_r * 0.85];
+    back_dy       = sqrt(max(0, pen_r * pen_r - pen_c[0] * pen_c[0]));
+    pen_meet_back = [0, pen_c[1] + back_dy + 0.15];
 
-    // Bezier handles for the three S-curve segments.
-    // Tuned by eye - tweak if the curve looks wrong.
-    h_step_to_belly_a = [p_cap_step_bot[0] + 0.2, p_cap_step_bot[1] - 1.5];
-    h_step_to_belly_b = [belly[0] + 0.4, belly[1] + 1.2];
+    // ------- Bezier control handles (tuned to look right) -------
+    // 1. Cap undercut: cap_front_bot -> neck_top
+    //    Concave: pulls inward, with handle dipping below cap.
+    h1a = [x_cap_front,  y_cap_bot - CAP_UNDERCUT_H * 0.55];
+    h1b = [x_neck_front + 0.10, y_neck_top + CAP_UNDERCUT_H * 0.30];
 
-    h_belly_to_waist_a = [belly[0],         (belly[1] + waist[1])/2 - 0.4];
-    h_belly_to_waist_b = [waist[0] + 0.6,   (belly[1] + waist[1])/2 + 0.6];
+    // 2. Shoulder: neck_bot -> body_top.  Convex broadening.
+    h2a = [x_neck_front, y_neck_bot - SHOULDER_H * 0.55];
+    h2b = [x_body_front + 0.05, y_body_top + SHOULDER_H * 0.25];
 
-    h_waist_to_td_a    = [waist[0] - 0.1,   (waist[1] + td_meet[1])/2 + 0.2];
-    h_waist_to_td_b    = [td_meet[0] + 0.2, td_meet[1] + 0.3];
+    // 3. Body-to-pendant undercut: body_bot -> pen_meet_top.
+    //    Concave: sweeps inward and down to the pendant top.
+    h3a = [x_body_front, y_body_bot - UNDERCUT_H * 0.55];
+    h3b = [pen_meet_top[0] + 0.30, pen_meet_top[1] + UNDERCUT_H * 0.35];
 
+    // Clip the union with the back-wall half-plane (x >= 0) so the
+    // pendant circle is flush with the back instead of bulging past it.
+    intersection() {
     union() {
         polygon(points = concat(
-            // Top edge: back -> front -> down the cap -> step
-            [p_top_back, p_top_front, p_cap_front_b,
-             p_cap_step_top, p_cap_step_bot],
+            // Top edge: back -> front, then down cap front
+            [[0, y_top],
+             [x_cap_front, y_top],
+             [x_cap_front, y_cap_bot]],
 
-            // S-curve down to the belly
-            bez_seg(p_cap_step_bot, h_step_to_belly_a,
-                    h_step_to_belly_b, belly, CURVE_STEPS),
+            // 1. Concave undercut into neck
+            bez_seg([x_cap_front, y_cap_bot], h1a, h1b,
+                    [x_neck_front, y_neck_top], CURVE_STEPS),
 
-            [belly],
+            // 2. Neck (straight)
+            [[x_neck_front, y_neck_top],
+             [x_neck_front, y_neck_bot]],
 
-            // Reverse curve from belly to waist
-            bez_seg(belly, h_belly_to_waist_a,
-                    h_belly_to_waist_b, waist, CURVE_STEPS),
+            // 3. Convex shoulder out to body
+            bez_seg([x_neck_front, y_neck_bot], h2a, h2b,
+                    [x_body_front, y_body_top], CURVE_STEPS),
 
-            [waist],
+            // 4. Body (straight)
+            [[x_body_front, y_body_top],
+             [x_body_front, y_body_bot]],
 
-            // Run into the teardrop
-            bez_seg(waist, h_waist_to_td_a,
-                    h_waist_to_td_b, td_meet, CURVE_STEPS),
+            // 5. Concave undercut down into pendant
+            bez_seg([x_body_front, y_body_bot], h3a, h3b,
+                    pen_meet_top, CURVE_STEPS),
 
-            [td_meet,
-             // Bottom-back corner; back edge auto-closes to top-back.
-             [0, 0]]
+            // 6. Close to the back wall just above the pendant arc.
+            //    The pendant circle (unioned below) covers everything
+            //    below this point on the front; the back wall closes
+            //    from pen_meet_back up to [0, y_top].
+            [pen_meet_top,
+             pen_meet_back]
         ));
 
-        // Rounded teardrop, unioned with polygon so the join is seamless.
-        translate(td_c) circle(r = td_r);
+        // Pendant lobe, unioned with polygon for a seamless join
+        translate(pen_c) circle(r = pen_r);
     }
+    // Back-wall clipping rectangle
+    translate([0, -1]) square([D + 5, H + 5]);
+    } // end intersection
 }
 
 module spacer_profile() {
@@ -180,31 +230,61 @@ module spacer_layer() {
 // rests on top of the corbel body when translated up by
 // HEIGHT), depth along +X with front face at X = CAP_BLOCK_D.
 //---------------------------------------------------------
+// 2D footprint of the rosette carving: a center dot + four
+// corner dots arranged diagonally, connected by thin grooves.
+// All sizes in inches; caller scales by INCH.
 module rosette_2d(d) {
-    petal_r      = d * 0.22;
-    petal_offset = d * 0.26;
+    dot_r       = d * ROSETTE_DOT_FRAC * 0.5;
+    arm_w       = d * ROSETTE_ARM_W;
+    arm_reach   = d * ROSETTE_ARM_REACH;
+
     union() {
-        circle(r = petal_r * 1.15);          // center hub
-        for (a = [0, 90, 180, 270])
-            rotate([0, 0, a])
-                translate([petal_offset, 0])
-                    circle(r = petal_r);     // four petals
+        // center dot
+        circle(r = dot_r);
+
+        // 4 diagonal arms (thin grooves) and 4 corner dots
+        for (a = [45, 135, 225, 315]) {
+            rotate([0, 0, a]) {
+                // arm groove: thin rectangle from near center out to corner
+                translate([arm_reach / 2, 0])
+                    square([arm_reach, arm_w], center = true);
+                // corner dot
+                translate([arm_reach, 0])
+                    circle(r = dot_r * 0.85);
+            }
+        }
     }
 }
 
+// Cap block: rectangular block with a bottom-front chamfer and
+// the rosette carved into the front face.
+//   - centered on Z (stack axis)
+//   - base at Y = 0
+//   - depth runs along +X, front face at X = CAP_BLOCK_D
 module cap_block() {
-    cw = CAP_BLOCK_W  * INCH;
-    cd = CAP_BLOCK_D  * INCH;
-    ch = CAP_BLOCK_H  * INCH;
-    rd = ROSETTE_DIAM * INCH;
-    rz = ROSETTE_DEPTH * INCH;
+    cw  = CAP_BLOCK_W       * INCH;  // length along Z
+    cd  = CAP_BLOCK_D       * INCH;  // depth along X
+    ch  = CAP_BLOCK_H       * INCH;  // height along Y
+    cf  = CAP_BLOCK_CHAMFER * INCH;
+    rd  = ROSETTE_DIAM      * INCH;
+    rz  = ROSETTE_DEPTH     * INCH;
 
+    // The base block, then SUBTRACT a triangular prism off the
+    // bottom-front edge for the chamfer, then SUBTRACT the rosette.
     difference() {
-        // block centered on Z, base at Y=0, +X is forward (toward front face)
         translate([0, 0, -cw/2])
             cube([cd, ch, cw]);
 
-        // Rosette carved into the front face (X = cd)
+        // Chamfer: triangular prism running along the Z axis,
+        // taking a 45-degree bite out of the bottom-front edge.
+        translate([cd - cf, -0.01, -cw/2 - 0.01])
+            rotate([0, 0, 0])
+                linear_extrude(height = cw + 0.02)
+                    polygon(points = [[0, 0], [cf + 0.01, 0], [cf + 0.01, cf + 0.01]]);
+        // (The polygon is in the XY plane; after extrude along Z it
+        //  carves a wedge along the full length of the bottom-front.)
+
+        // Rosette carving on the front face
         translate([cd - rz + 0.01, ch/2, 0])
             rotate([0, 90, 0])
                 linear_extrude(height = rz + 0.1)
@@ -259,9 +339,19 @@ module corbel_assembly(explode = false) {
 
 //---------------------------------------------------------
 // Dispatch
+//
+// The corbel is modeled with its height along +Y and its
+// stack axis along Z.  For preview/assembled views we rotate
+// so height is along +Z (OpenSCAD's natural "up"), so the
+// default isometric camera shows the corbel standing upright.
+// For single-piece exports (main_layer / spacer_layer / cap)
+// the part is left flat in the XY plane, which is what a CAM
+// program wants for laser/CNC import.
 //---------------------------------------------------------
-if      (MODE == "assembled")    corbel_assembly(explode = false);
-else if (MODE == "exploded")     corbel_assembly(explode = true);
+module stand_upright() { rotate([90, 0, 0]) children(); }
+
+if      (MODE == "assembled")    stand_upright() corbel_assembly(explode = false);
+else if (MODE == "exploded")     stand_upright() corbel_assembly(explode = true);
 else if (MODE == "main_layer")   main_layer();
 else if (MODE == "spacer_layer") spacer_layer();
 else if (MODE == "cap_block")    cap_block();
