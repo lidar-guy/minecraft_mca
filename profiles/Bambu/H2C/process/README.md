@@ -17,12 +17,26 @@ OrcaSlicer (Bambu Studio is a strict subset of Orca's schema).
 
 ## Verified filament pairings
 
-The PPS profile is built around the **Bambu Studio "Generic PPS-CF" filament
-preset** driving **Fiberon PPS-GF** filament — that combination prints
-cleanly, where the Fiberon-branded filament preset did not. Use Generic
-PPS-CF as your filament selection in Bambu Studio when running this
-process profile, regardless of brand/CF-vs-GF, unless your filament's own
-preset has been verified.
+The PPS process profiles were originally built around the **Bambu Studio
+"Generic PPS-CF" filament preset** driving **Fiberon PPS-GF** filament —
+that combination prints cleanly where the (default) Fiberon-branded
+filament preset did not.
+
+For Fiberon PPS-GF20 specifically, there is now a **dedicated user-built
+filament profile** in `../filament/Fiberon PPS-GF20 @BBL H2C 0.2 nozzle.json`
+that fixes two real issues found during printing:
+
+1. **Default 330 °C is too hot** — caused polymer "curdling" and brown
+   halos around holes. Profile drops to **320 °C** (still well inside
+   Polymaker's 310–350 °C window for layer adhesion).
+2. **Exhaust fan was being driven at 50 % during print** — silently
+   bled chamber heat and caused mid-print warp lift. Profile sets
+   `during_print_exhaust_fan_speed: 0` and enables active chamber
+   control at 70 °C.
+
+Use that filament profile (instead of Generic PPS-CF) when you've got
+Fiberon PPS-GF20 loaded. The PPS process profiles in this directory pair
+with either.
 
 ## Supported filaments (other CF/GF profiles)
 

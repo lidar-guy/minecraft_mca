@@ -1,0 +1,67 @@
+{
+    "type": "filament",
+    "name": "Fiberon PPS-GF20 @BBL H2C 0.2 nozzle (user 320C, exhaust off)",
+    "from": "User",
+    "filament_id": "GFLU_PPSGF20",
+    "setting_id": "GFLU_PPSGF20_H2C_02",
+    "instantiation": "true",
+    "inherits": "",
+
+    "filament_vendor": ["Polymaker"],
+    "filament_type": ["PPS-GF"],
+    "filament_density": ["1.65"],
+    "filament_cost": ["79.99"],
+    "filament_diameter": ["1.75"],
+    "filament_flow_ratio": ["0.95"],
+    "filament_max_volumetric_speed": ["8"],
+    "filament_minimal_purge_on_wipe_tower": ["20"],
+
+    "nozzle_temperature": ["320"],
+    "nozzle_temperature_initial_layer": ["320"],
+    "nozzle_temperature_range_low": ["310"],
+    "nozzle_temperature_range_high": ["340"],
+    "temperature_vitrification": ["90"],
+
+    "hot_plate_temp": ["85"],
+    "hot_plate_temp_initial_layer": ["85"],
+    "eng_plate_temp": ["85"],
+    "eng_plate_temp_initial_layer": ["85"],
+    "textured_plate_temp": ["85"],
+    "textured_plate_temp_initial_layer": ["85"],
+
+    "activate_chamber_temp_control": ["1"],
+    "chamber_temperatures": ["70"],
+
+    "fan_min_speed": ["0"],
+    "fan_max_speed": ["0"],
+    "additional_cooling_fan_speed": ["0"],
+    "overhang_fan_speed": ["0"],
+    "overhang_fan_threshold": ["0%"],
+    "close_fan_the_first_x_layers": ["999"],
+    "fan_cooling_layer_time": ["0"],
+    "full_fan_speed_layer": ["999"],
+    "additional_fan_full_speed_layer": ["999"],
+    "support_material_interface_fan_speed": ["0"],
+    "reduce_fan_stop_start_freq": ["1"],
+
+    "during_print_exhaust_fan_speed": ["0"],
+    "complete_print_exhaust_fan_speed": ["0"],
+
+    "slow_down_layer_time": ["0"],
+    "slow_down_min_speed": ["20"],
+    "slow_down_for_layer_cooling": ["0"],
+
+    "filament_retraction_length": ["0.6"],
+    "filament_retraction_speed": ["30"],
+    "filament_deretraction_speed": ["30"],
+    "filament_z_hop": ["0.2"],
+    "filament_long_retractions_when_cut": ["0"],
+    "long_retractions_when_ec": ["0"],
+    "retraction_distances_when_ec": ["0"],
+
+    "compatible_printers": [
+        "Bambu Lab H2C 0.2 nozzle"
+    ],
+
+    "notes": "USER-BUILT Fiberon PPS-GF20 filament profile for the Bambu Lab H2C with 0.2 mm hardened nozzle. This is NOT a vendor-canonical Polymaker file — it could not be fetched (Polymaker's CDN blocks direct downloads). Structure was templated from Polymaker's Fiberon PA6-GF base profile in the BambuStudio repo; values come from Polymaker's published PPS-GF20 specs and from in-print discoveries.\n\nKey deviations from default behavior (the deviations that motivated this profile):\n- nozzle_temperature dropped from 330 to 320 to eliminate the polymer-degradation 'curdling' and brown halos around holes observed at 330 C, while staying solidly inside Polymaker's 310-350 C window for layer adhesion.\n- during_print_exhaust_fan_speed set to 0 (was 50% in the previously adapted profile, which silently dropped chamber temp and caused mid-print warp lift).\n- complete_print_exhaust_fan_speed also 0; turn it on manually after the print if you want to clear fumes before opening the door.\n- activate_chamber_temp_control = 1, chamber_temperatures = 70 C. With exhaust off the chamber climbs ~60 C passively from the bed/hotend; enabling active chamber heating (if the H2C supports it) gets you a full 70 C for warp control.\n- All part-cooling, overhang, additional, support-interface, fan speeds set to 0; close_fan_the_first_x_layers = 999. PPS is crystalline and bonds badly with any forced cooling.\n- filament_max_volumetric_speed 8 mm^3/s (conservative vs PA-GF's 12) to stay well clear of melt instability at 320 C.\n- filament_flow_ratio 0.95 is a starting point; recalibrate at 320 C once you can run a flow tower.\n\nSetup checklist before printing:\n1. Verify chamber control is actually engaging on your H2C (the field is harmless if unsupported, but only does anything if the printer has an active chamber heater).\n2. Hardened steel or ruby nozzle is mandatory — glass fiber will eat brass within minutes.\n3. Polymaker recommends annealing finished PPS-GF20 parts at 130 C for ~10 hr for full mechanical / thermal performance.\n4. Bambu Studio dual-extruder H2 variants expect 2-entry arrays for most fields. This file is built for single-extruder (1-entry arrays). If your H2C turns out to be dual-nozzle and Bambu Studio rejects the import, duplicate every array value (e.g. ['320'] -> ['320','320']) and re-import."
+}
