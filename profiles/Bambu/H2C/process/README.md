@@ -22,21 +22,33 @@ The PPS process profiles were originally built around the **Bambu Studio
 that combination prints cleanly where the (default) Fiberon-branded
 filament preset did not.
 
-For Fiberon PPS-GF20 specifically, there is now a **dedicated user-built
-filament profile** in `../filament/Fiberon PPS-GF20 @BBL H2C 0.2 nozzle.json`
-that fixes two real issues found during printing:
+For Fiberon PPS-GF20 and PPS-CF10 specifically, there are now **two
+filament profiles** in `../filament/`, modified from the user's
+Polymaker base profiles to fix two issues found during printing:
 
-1. **Default 330 °C is too hot** — caused polymer "curdling" and brown
-   halos around holes. Profile drops to **320 °C** (still well inside
-   Polymaker's 310–350 °C window for layer adhesion).
-2. **Exhaust fan was being driven at 50 % during print** — silently
-   bled chamber heat and caused mid-print warp lift. Profile sets
-   `during_print_exhaust_fan_speed: 0` and enables active chamber
-   control at 70 °C.
+- `Fiberon PPS-GF20 @0.2 nozzle.json`
+- `Fiberon PPS-CF10 @0.2 nozzle.json`
 
-Use that filament profile (instead of Generic PPS-CF) when you've got
-Fiberon PPS-GF20 loaded. The PPS process profiles in this directory pair
-with either.
+Fixes folded into both:
+
+1. **PPS-GF20: default 330 °C dropped to 320 °C** — eliminates the polymer
+   "curdling" and brown halos around holes observed at 330 °C. Still
+   inside Polymaker's 310–350 °C window for layer adhesion. PPS-CF10 was
+   already at 320 °C; left as-is.
+2. **`during_print_exhaust_fan_speed: 0`** added — the Bambu default
+   ~50 % was silently bleeding chamber heat and caused mid-print warp
+   lift on PPS-GF20. With exhaust off the chamber climbed to ~60 °C
+   passively. `activate_chamber_temp_control: 1` and
+   `chamber_temperatures: 70` added so active heating tops it up to
+   70 °C when the printer supports it.
+
+Everything else from the base profiles (density 1.36 / 1.43, flow ratio
+0.96, conservative 2.5 / 2.0 mm³/s volumetric, retraction, all fan
+speeds at 0, `base_id: GFST02`) is preserved exactly.
+
+Use these in Bambu Studio instead of Generic PPS-CF when you've got
+Fiberon loaded. The PPS process profiles in this directory pair with
+either.
 
 ## Supported filaments (other CF/GF profiles)
 

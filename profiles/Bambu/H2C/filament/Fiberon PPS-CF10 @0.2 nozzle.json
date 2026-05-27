@@ -1,0 +1,167 @@
+{
+    "type": "filament",
+    "name": "Fiberon PPS-CF10 @0.2 nozzle",
+    "from": "User",
+    "instantiation": "true",
+    "setting_id": "GFSU_PPSCF10_02",
+    "base_id": "GFST02",
+    "inherits": "",
+    "filament_id": "P_FiberonPPSCF10",
+    "filament_type": [
+        "PPS-CF"
+    ],
+    "filament_vendor": [
+        "Polymaker"
+    ],
+    "filament_settings_id": [
+        "Fiberon PPS-CF10 @0.2 nozzle"
+    ],
+    "filament_diameter": [
+        "1.75"
+    ],
+    "filament_density": [
+        "1.43"
+    ],
+    "filament_cost": [
+        "120"
+    ],
+    "filament_flow_ratio": [
+        "0.96"
+    ],
+    "filament_max_volumetric_speed": [
+        "2"
+    ],
+    "filament_shrink": [
+        "100%"
+    ],
+    "filament_is_support": [
+        "0"
+    ],
+    "filament_soluble": [
+        "0"
+    ],
+    "nozzle_temperature": [
+        "320"
+    ],
+    "nozzle_temperature_initial_layer": [
+        "320"
+    ],
+    "nozzle_temperature_range_low": [
+        "310"
+    ],
+    "nozzle_temperature_range_high": [
+        "350"
+    ],
+    "temperature_vitrification": [
+        "150"
+    ],
+    "cool_plate_temp": [
+        "0"
+    ],
+    "cool_plate_temp_initial_layer": [
+        "0"
+    ],
+    "eng_plate_temp": [
+        "90"
+    ],
+    "eng_plate_temp_initial_layer": [
+        "90"
+    ],
+    "hot_plate_temp": [
+        "90"
+    ],
+    "hot_plate_temp_initial_layer": [
+        "90"
+    ],
+    "textured_plate_temp": [
+        "90"
+    ],
+    "textured_plate_temp_initial_layer": [
+        "90"
+    ],
+    "activate_chamber_temp_control": [
+        "1"
+    ],
+    "chamber_temperatures": [
+        "70"
+    ],
+    "filament_retraction_length": [
+        "1"
+    ],
+    "filament_z_hop": [
+        "0.4"
+    ],
+    "filament_z_hop_types": [
+        "Auto Lift"
+    ],
+    "filament_retraction_speed": [
+        "40"
+    ],
+    "filament_deretraction_speed": [
+        "30"
+    ],
+    "filament_retract_when_changing_layer": [
+        "1"
+    ],
+    "filament_wipe": [
+        "1"
+    ],
+    "filament_retract_before_wipe": [
+        "70%"
+    ],
+    "fan_cooling_layer_time": [
+        "0"
+    ],
+    "fan_min_speed": [
+        "0"
+    ],
+    "fan_max_speed": [
+        "0"
+    ],
+    "overhang_fan_speed": [
+        "0"
+    ],
+    "overhang_fan_threshold": [
+        "0%"
+    ],
+    "additional_cooling_fan_speed": [
+        "0"
+    ],
+    "reduce_fan_stop_start_freq": [
+        "1"
+    ],
+    "close_fan_the_first_x_layers": [
+        "3"
+    ],
+    "during_print_exhaust_fan_speed": [
+        "0"
+    ],
+    "complete_print_exhaust_fan_speed": [
+        "0"
+    ],
+    "slow_down_for_layer_cooling": [
+        "0"
+    ],
+    "slow_down_layer_time": [
+        "5"
+    ],
+    "slow_down_min_speed": [
+        "10"
+    ],
+    "filament_max_volumetric_speed_when_overhang": [
+        "1"
+    ],
+    "filament_minimal_purge_on_wipe_tower": [
+        "20"
+    ],
+    "filament_start_gcode": [
+        "; Filament gcode\n; Fiberon PPS-CF10 - 0.2 mm hardened/wear-resistant nozzle\n; Exhaust fan forced to 0% during print (Bambu default ~50% silently bled\n;   chamber heat and caused mid-print warp lift on the PPS-GF20 sibling)\n; Active chamber control on at 70C; bed 90C; all part-cooling fans 0\n; Recommended dry storage; anneal 125C/16h optional for full props"
+    ],
+    "filament_end_gcode": [
+        "; Filament end gcode"
+    ],
+    "compatible_printers": [
+        "Bambu Lab H2C 0.2 nozzle"
+    ],
+    "version": "01.10.00.00"
+}
