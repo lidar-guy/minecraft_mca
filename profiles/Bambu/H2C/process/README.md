@@ -13,6 +13,7 @@ OrcaSlicer (Bambu Studio is a strict subset of Orca's schema).
 | `0.10mm Standard @BBL H2C 0.2 nozzle CF-GF.json` | 0.10 mm | Balanced default for any CF/GF — start here |
 | `0.12mm Draft @BBL H2C 0.2 nozzle CF-GF.json` | 0.12 mm | Fastest (still inside 0.75 × nozzle limit) |
 | `0.10mm PPS-CF-GF @BBL H2C 0.2 nozzle.json` | 0.10 mm | **PPS-CF / PPS-GF dialed** — engineering tune |
+| `0.10mm PPS Precision @BBL H2C 0.2 nozzle.json` | 0.10 mm | **PPS jigs / SMT fixtures** — 0.15 mm features (incl. layer 1) |
 
 ## Verified filament pairings
 
@@ -66,7 +67,30 @@ profile:
 - **Precise outer wall: on.** Worth the extra travel for tolerance-sensitive
   engineering prints.
 
-## Design choices (PPS-CF/GF profile)
+## Design choices (PPS Precision profile)
+
+For SMT solder jigs, optical fixtures, and other tolerance-critical PPS
+parts that need features down to 0.15 mm wide — including on layer 1.
+
+- **Arachne wall generator + `min_bead_width: 75%`.** On a 0.2 mm nozzle
+  that resolves to a 0.15 mm minimum bead. Thin alignment fences, register
+  marks, and pocket lips print as designed instead of being widened or
+  dropped by classic wall logic.
+- **`initial_layer_line_width: 0.15` + `initial_layer_print_height: 0.08`.**
+  First-layer extrusion targets 0.15 mm wide × 0.08 mm tall — ~1.9:1 bead
+  aspect, the lowest you can take a 0.2 mm nozzle and still expect
+  adhesion. Brim is widened to 10 mm to compensate.
+- **Outer wall 30 mm/s @ 800 mm/s² accel.** Peak volumetric flow ~1.4 mm³/s
+  — extremely conservative. The slower outer wall + lower jerk (7)
+  trades print time for dimensional repeatability.
+- **`precise_outer_wall: on`, `detect_thin_wall: off`.** Arachne handles
+  thin-wall detection itself; legacy thin-wall mode would conflict.
+- **No ironing, no overhang fan tricks.** PPS-CF/GF doesn't iron well
+  (fiber smear) and prefers fan-off throughout.
+- **xy compensation left at 0.** You **must** calibrate this per filament
+  for an SMT jig — see "Calibration before printing" below.
+
+## Design choices (PPS-CF/GF engineering profile)
 
 PPS warps more than PA and sags more on bridges, so this profile diverges:
 
@@ -97,11 +121,36 @@ PPS warps more than PA and sags more on bridges, so this profile diverges:
 Unknown fields (if any survive Orca-to-Studio drift) are silently ignored
 on import; the profile still loads and applies all recognized fields.
 
+## Calibration before printing (PPS Precision profile)
+
+Print an SMT jig blind and the pockets will be the wrong size. PPS shrinks
+1–2 % and the slicer compensates statically. Calibrate before the jig:
+
+1. **Flow ratio.** Print a single-wall calibration cube; measure outer
+   wall thickness with calipers; adjust filament flow ratio until measured
+   = nominal (0.18 mm here).
+2. **XY hole / contour compensation.** Print a tolerance test (e.g. the
+   Orca Calibration → Tolerance Test, or a parametric pin-and-hole gauge).
+   Update `xy_hole_compensation` and `xy_contour_compensation` until
+   nominal-size pins drop into nominal-size holes without force.
+3. **Pressure advance** per filament/temperature using Orca's PA tower
+   (Bambu Studio: calibrate via filament settings).
+4. **Bed mesh + Z offset** on the actual build plate you will use for the
+   jig. First-layer height is 0.08 mm — a bad Z offset will obliterate
+   0.15 mm features.
+
+Skip any of the above and the jig will not seat components correctly.
+
 ## Tuning notes
 
-- **PPS-CF / PPS-GF**: use the dedicated `0.10mm PPS-CF-GF` profile. If you
-  still see corner curl, raise brim width to 10 mm and drop chamber-cool
-  fan (filament preset) further.
+- **PPS-CF / PPS-GF (general engineering parts)**: use the dedicated
+  `0.10mm PPS-CF-GF` profile. If you still see corner curl, raise brim
+  width to 10 mm and drop chamber-cool fan (filament preset) further.
+- **PPS-CF / PPS-GF (jigs, fixtures, SMT alignment tools)**: use
+  `0.10mm PPS Precision`. Always calibrate XY compensation first
+  (see above). If 0.15 mm fences are still missing from the slice, try
+  dropping `min_bead_width` to `"50%"` — but expect more layer-time
+  variation as Arachne switches bead counts.
 - **PPA-CF**: start from `0.10mm PPS-CF-GF` and bump outer-wall to 50 mm/s
   — PPA tolerates more flow than PPS.
 - **PLA-CF / PETG-CF**: use `0.10mm Standard`; you can comfortably raise
